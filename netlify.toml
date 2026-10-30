@@ -6,3 +6,13 @@
   to = "/.netlify/functions/record-post"
   status = 200
   force = true
+
+  [[redirects]]
+  from = "/logs"
+  to = "/.netlify/functions/view-logs"
+  status = 200
+
+  [[redirects]]
+  from = "/"
+  to = "/.netlify/functions/view-logs"
+  status = 200

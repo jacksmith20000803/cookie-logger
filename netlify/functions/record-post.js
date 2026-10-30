@@ -29,9 +29,20 @@ export default async (req, context) => {
   }
 
   try {
-    // 3. Parse the request body.
-    //    Use req.text() instead if your client sends plain text.
-    const data = await req.json();
+    // 3. Parse JSON when possible, while still logging plain-text and
+    //    form-encoded POST bodies instead of dropping them on parse errors.
+    let data;
+    const contentType = req.headers.get("content-type") || "";
+    try {
+      data = await req.json();
+    } catch (jsonError) {
+      const rawBody = typeof req.text === "function" ? await req.text() : "";
+      if (contentType.includes("application/x-www-form-urlencoded") && rawBody) {
+        data = Object.fromEntries(new URLSearchParams(rawBody).entries());
+      } else {
+        data = rawBody;
+      }
+    }
 
     // 4. Build the log entry
     const timestamp = new Date().toISOString();

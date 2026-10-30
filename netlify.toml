@@ -13,6 +13,11 @@
   status = 200
 
   [[redirects]]
+  from = "/api/log/delete"
+  to = "/.netlify/functions/delete-log"
+  status = 200
+
+  [[redirects]]
   from = "/"
   to = "/.netlify/functions/view-logs"
   status = 200

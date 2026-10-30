@@ -66,8 +66,11 @@ export default async (req) => {
           return `
             <article class="log-card">
               <header>
-                <h2>Log ${entries.length - index}</h2>
-                <code>${escapeHtml(key)}</code>
+                <div class="log-title">
+                  <h2>Log ${entries.length - index}</h2>
+                  <code>${escapeHtml(key)}</code>
+                </div>
+                <button class="delete-button" type="button" data-key="${escapeHtml(key)}">Delete</button>
               </header>
               <pre>${escapeHtml(payload)}</pre>
             </article>`;
@@ -86,17 +89,50 @@ export default async (req) => {
     h1 { margin: 0 0 24px; }
     .log-card { background: #1f2937; border: 1px solid #374151; border-radius: 10px; margin: 16px 0; overflow: hidden; }
     .log-card header { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #374151; }
+    .log-title { min-width: 0; }
     .log-card h2 { margin: 0; font-size: 16px; }
     .log-card code { color: #9ca3af; overflow-wrap: anywhere; }
+    .delete-button { flex-shrink: 0; border: 1px solid #b91c1c; border-radius: 6px; background: #991b1b; color: #fff; padding: 8px 12px; cursor: pointer; }
+    .delete-button:hover { background: #b91c1c; }
+    .delete-button:disabled { opacity: 0.6; cursor: wait; }
     pre { margin: 0; padding: 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
     .empty { padding: 24px; text-align: center; border: 1px dashed #4b5563; border-radius: 10px; }
   </style>
 </head>
 <body>
   <main>
-    <h1>Incoming POST logs (${entries.length})</h1>
+    <h1 id="log-count">Incoming POST logs (${entries.length})</h1>
     ${cards}
   </main>
+  <script>
+    function refreshLogLabels() {
+      const cards = [...document.querySelectorAll(".log-card")];
+      document.querySelector("#log-count").textContent = "Incoming POST logs (" + cards.length + ")";
+      cards.forEach((card, index) => {
+        card.querySelector("h2").textContent = "Log " + (cards.length - index);
+      });
+    }
+
+    document.querySelectorAll(".delete-button").forEach((button) => {
+      button.addEventListener("click", async () => {
+        if (!window.confirm("Delete this log?")) return;
+
+        button.disabled = true;
+        try {
+          const key = encodeURIComponent(button.dataset.key || "");
+          const response = await fetch("/api/log/delete?key=" + key, { method: "DELETE" });
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+          button.closest(".log-card").remove();
+          refreshLogLabels();
+        } catch (error) {
+          window.alert("Failed to delete log: " + (error.message || error));
+          button.disabled = false;
+        }
+      });
+    });
+  </script>
 </body>
 </html>`;
 

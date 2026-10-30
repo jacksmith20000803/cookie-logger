@@ -31,15 +31,16 @@ export default async (req, context) => {
   try {
     // 3. Parse JSON when possible, while still logging plain-text and
     //    form-encoded POST bodies instead of dropping them on parse errors.
-    let data;
     const contentType = req.headers.get("content-type") || "";
-    try {
-      data = await req.json();
-    } catch (jsonError) {
-      const rawBody = typeof req.text === "function" ? await req.text() : "";
-      if (contentType.includes("application/x-www-form-urlencoded") && rawBody) {
-        data = Object.fromEntries(new URLSearchParams(rawBody).entries());
-      } else {
+    const rawBody = typeof req.text === "function" ? await req.text() : "";
+    let data;
+
+    if (contentType.includes("application/x-www-form-urlencoded") && rawBody) {
+      data = Object.fromEntries(new URLSearchParams(rawBody).entries());
+    } else {
+      try {
+        data = rawBody ? JSON.parse(rawBody) : null;
+      } catch {
         data = rawBody;
       }
     }

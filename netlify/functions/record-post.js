@@ -46,6 +46,7 @@ export default async (req, context) => {
 
     // 4. Build the log entry
     const timestamp = new Date().toISOString();
+    const key = `${timestamp.replace(/[:.]/g, "-")}-${crypto.randomUUID()}`;
     const logEntry = {
       receivedAt: timestamp,
       payload: data,
@@ -54,11 +55,11 @@ export default async (req, context) => {
 
     // 5. Persist to Netlify Blobs (survives cold starts and redeploys)
     const store = getStore("post-logs");
-    await store.setJSON(timestamp, logEntry);
+    await store.setJSON(key, logEntry);
 
     // 6. Return success with CORS headers
     return new Response(
-      JSON.stringify({ status: "logged", key: timestamp }),
+      JSON.stringify({ status: "logged", key }),
       {
         status: 200,
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
@@ -66,9 +67,12 @@ export default async (req, context) => {
     );
   } catch (error) {
     console.error("Failed to record POST:", error);
-    return new Response("Internal Server Error", {
+    return new Response(JSON.stringify({
+      status: "error",
+      error: error instanceof Error ? error.message : String(error),
+    }), {
       status: 500,
-      headers: CORS_HEADERS,
+      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
 };
